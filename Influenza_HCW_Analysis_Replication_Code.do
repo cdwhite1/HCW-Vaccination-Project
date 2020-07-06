@@ -2,10 +2,9 @@
 
 clear
 
-global PATH "DIRECTORY FOR ANALYSIS FILE"
+global PATH "DIRECTORY FOR ANALYSIS CODE"
 
 set matsize 2000
-
 
 
 
@@ -26,16 +25,13 @@ set matsize 2000
 
 
 ************************************************************************************************
-***************Table 2:   Main result; heterogeneity across seasons/age/law Types
+***************Table 2:   Main Result; heterogeneity across seasons/age/law Types
 ***************Table S2:  Differential Effects for heterogeneity results in Table 2
 ***************Table S5:  Duplicates Table 2 with wild bootstrapped standard errors
 ************************************************************************************************
 
-*NOTE: These three tables are grouped together because they all represent the main results (i.e., the elements from Tables S2 and S5 are derived from the same regressions those for Table 2).
 
-
-
-****************Main Result (for Tables 2, S5)
+****************Main Result (for Tables 2, S2)
 
 *Import analysis file
 cd "$PATH\Influenza National\"
@@ -302,7 +298,6 @@ poisson pi offer_post i.ym i.state `controls' , exposure(pop_tot) cluster(state)
 *Display %change in P&I mortality from Poisson regressions
 disp exp(_b[offer_post])-1
 
-
 *Poisson coefficient is a %change, but all other estimates are presented as changes in levels. Below we get predicted changes in levels.
 *get actual predicted number of P&I deaths
 predict ed1
@@ -316,8 +311,13 @@ predict ed2
 gen ep1=100000*ed1/pop_tot
 gen ep2=100000*ed2/pop_tot
 
+*Weight by state population
+egen mean_meanpop = mean(meanpop)
+replace ep1 = ep1*meanpop/mean_meanpop
+replace ep2 = ep2*meanpop/mean_meanpop
+
 *test for the difference among treated states in the post-treatment period
-ttest ep1=ep2 if offer_post2==1
+ttest ep1=ep2 if offer_post2==1 
 
 *Repeat the previous exercise to get the lower and upper bound of the 95% CI. To do this, we replace the coefficient in the b matrix with the lower (upper) bound
 
@@ -338,6 +338,8 @@ replace offer_post=0
 predict ed2
 gen ep1=100000*ed1/pop_tot
 gen ep2=100000*ed2/pop_tot
+replace ep1 = ep1*meanpop/mean_meanpop
+replace ep2 = ep2*meanpop/mean_meanpop
 ttest ep1=ep2 if offer_post2==1
 
 *Upper bound CI:
@@ -356,6 +358,8 @@ replace offer_post=0
 predict ed2
 gen ep1=100000*ed1/pop_tot
 gen ep2=100000*ed2/pop_tot
+replace ep1 = ep1*meanpop/mean_meanpop
+replace ep2 = ep2*meanpop/mean_meanpop
 ttest ep1=ep2 if offer_post2==1
 
 *Report some key statistics:
@@ -369,9 +373,9 @@ ttest ep1=ep2 if offer_post2==1
 *Poisson % change (i.e., exp(coef)-1: -0.02077
 *p-value: 0.029
 
-*predicted difference in PI rate: -0.1163851 
-*Lower bound 95% CI:  -.2197287
-*Upper bound 95% CI:  -.0110579
+*predicted difference in PI rate: -0.1322726 
+*Lower bound 95% CI:  -.2497235
+*Upper bound 95% CI:  -.0125673 
 
 
 
@@ -579,7 +583,7 @@ foreach var of varlist flu_any P_UTDPCV {
 ************************************************************************************************
 
 
-cd "E:\BRFSS"
+cd "DIRECTORY FOR BRFSS DATA"
 clear
 use brfss_state_vax_hcw
 
@@ -652,7 +656,7 @@ xtreg pvac_o65 offer_post  i.flu_year `controls' [aweight=meanpop] , fe cluster(
 *************** Figure 1
 **************************************************************************
 
-*************** Figure 1A
+*************** Figure 1B
 
 cd "$PATH\Influenza National\"
 use flu_hcw_national_analysis.dta, clear
@@ -687,7 +691,7 @@ twoway bar pct_pop flu_year if max_offer==1, name(mort_trends, replace) ///
  legend(cols(1) order( 1 "Share of Population Affected by Laws" 2 "P&I Mortality Rate in Treated States" 3 "P&I Mortality Rate in Non-Treated States")) ///
  xtitle("Influenza Year")
  
-*************** Figure 1B
+*************** Figure 1A
 
  *Pull in NHIS data
  use "$PATH\Influenza HCW National\Data\Figure 1 Data\nhis_00012.dta", clear
@@ -736,7 +740,6 @@ graph combine vax_trends mort_trends, xsize(4) ysize(2) graphregion(color(white)
 **************************************************************************
 *************** Figure 2: Event Study
 **************************************************************************
-cd "$PATH\Influenza National\"
 
 clear
 use flu_hcw_national_analysis
